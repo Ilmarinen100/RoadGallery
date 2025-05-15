@@ -3,6 +3,8 @@ package de.quartett.mobile.roadgallery
 import android.content.Context
 import android.hardware.camera2.CameraManager
 import android.util.Log
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -11,6 +13,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.currentCompositionLocalContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -21,11 +24,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import java.io.ByteArrayOutputStream
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
-import kotlin.math.absoluteValue
 
 @Composable
 fun CameraScreen(viewModel: CameraViewModel) {
@@ -37,7 +41,7 @@ fun CameraScreen(viewModel: CameraViewModel) {
 
     Button(onClick = {
         Log.i("UI", "click")
-        viewModel.changeLens(foo.absoluteValue)
+        viewModel.changeLens()
         foo += 1
 
     }, content = {Text("Change Cameras")})
@@ -45,6 +49,7 @@ fun CameraScreen(viewModel: CameraViewModel) {
     LaunchedEffect(accel) {
         if (accel) {
             Log.i("accel2", "RISING EDGE")
+            recordImage(viewModel, viewModel.context)
         }
     }
         if (accel) {
@@ -72,14 +77,14 @@ fun CameraScreen(viewModel: CameraViewModel) {
     }
 
     key ( foo ) {
-        Text("$foo ${uiState.first}")
+        Text("$foo")
 
         Log.i("recompose", "happened")
         LaunchedEffect(viewModel.state) {
             Log.i("recompose", "launched")
             val cameraProvider = getCameraProvider(context)
             cameraProvider.unbindAll()
-            cameraProvider.bindToLifecycle(lifecycleOwner, uiState.second, preview)
+            cameraProvider.bindToLifecycle(lifecycleOwner, uiState, preview)
             preview.surfaceProvider = previewView.surfaceProvider
         }
 
@@ -111,4 +116,32 @@ fun getCameraIds(context: Context): List<String> {
     }
 
     return cameraIds
+}
+
+
+suspend fun recordImage(viewModel: CameraViewModel, context: Context) {
+    val lifecycleOwner = context as? LifecycleOwner
+        ?: throw IllegalStateException("Context is not a LifecycleOwner")
+    val imageCapture = ImageCapture.Builder().build()
+    val cameraProvider = getCameraProvider(context)
+    cameraProvider.unbindAll()
+    cameraProvider.bindToLifecycle(lifecycleOwner, viewModel.state.value, imageCapture)
+    val outputStream = ByteArrayOutputStream()
+    val outputOptions = ImageCapture.OutputFileOptions.Builder(outputStream).build()
+
+    imageCapture.takePicture(
+        outputOptions,
+        ContextCompat.getMainExecutor(context),
+        object : ImageCapture.OnImageSavedCallback {
+            override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                Log.d("CameraX", "Image saved to: ${outputFileResults.savedUri}")
+                val imageData = outputStream.toByteArray()
+                viewModel.updateImageData(imageData)
+            }
+
+            override fun onError(exception: ImageCaptureException) {
+                Log.e("CameraX", "Image capture failed: ${exception.message}", exception)
+            }
+        }
+    )
 }
