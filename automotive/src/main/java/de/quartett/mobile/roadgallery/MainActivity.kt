@@ -13,6 +13,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.Manifest
+import android.content.Context
+import android.hardware.SensorManager
 
 class MainActivity : ComponentActivity() {
     private val permissions = arrayOf(Manifest.permission.CAMERA, Car.PERMISSION_SPEED,Car.PERMISSION_POWERTRAIN)
@@ -20,6 +22,8 @@ class MainActivity : ComponentActivity() {
     private var viewModel: MainViewModel? = null
     
     override fun onCreate(savedInstanceState: Bundle?) {
+
+
         super.onCreate(savedInstanceState)
         setContent {
             RoadGalleryTheme {
@@ -30,8 +34,9 @@ class MainActivity : ComponentActivity() {
                         pushUiState = PushUiState(this@MainActivity),
                     ).also { viewModel = it }
                 }
+                val sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
                 val cameraViewModel = viewModel {
-                    CameraViewModel()
+                    CameraViewModel(sensorManager)
                 }
                 MainView(viewModel, cameraViewModel)
             }

@@ -11,44 +11,78 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlin.math.absoluteValue
 
 @Composable
 fun CameraScreen(viewModel: CameraViewModel) {
+    var foo by remember { mutableIntStateOf(0) }
 
-    Button(onClick = {viewModel.changeLens()}) {
-        Text("Change Cameras")
+    val uiState by viewModel.state.collectAsStateWithLifecycle()
+
+    val accel: Boolean by viewModel.deboucedAccel.collectAsStateWithLifecycle()
+
+    Button(onClick = {
+        Log.i("UI", "click")
+        viewModel.changeLens(foo.absoluteValue)
+        foo += 1
+
+    }, content = {Text("Change Cameras")})
+
+    LaunchedEffect(accel) {
+        if (accel) {
+            Log.i("accel2", "RISING EDGE")
+        }
     }
+        if (accel) {
+            Text("acceleration detected", color=Color.Red)
+        } else {
+            Text("at rest", color= Color.Green)
+        }
+
 
     val context = LocalContext.current
 
     val lifecycleOwner = LocalLifecycleOwner.current
+
+
+    val cameraIDs = getCameraIds(context)
+    Log.i("cameraIds", cameraIDs.joinToString())
+
+
+    if (cameraIDs.isEmpty()){
+        Log.e("Camera", "No Camera")
+    }
     val preview = Preview.Builder().build()
     val previewView = remember {
         PreviewView(context)
     }
 
-    val cameraIDs = getCameraIds(context)
-    for (cameraID in cameraIDs) {
-        Log.i("cameraIds", cameraID)
-    }
+    key ( foo ) {
+        Text("$foo ${uiState.first}")
 
-    if (cameraIDs.isEmpty()){
-        Log.e("Camera", "No Camera")
-    }
+        Log.i("recompose", "happened")
+        LaunchedEffect(viewModel.state) {
+            Log.i("recompose", "launched")
+            val cameraProvider = getCameraProvider(context)
+            cameraProvider.unbindAll()
+            cameraProvider.bindToLifecycle(lifecycleOwner, uiState.second, preview)
+            preview.surfaceProvider = previewView.surfaceProvider
+        }
 
-    LaunchedEffect(viewModel.cameraSelector) {
-        val cameraProvider = getCameraProvider(context)
-        cameraProvider.unbindAll()
-        cameraProvider.bindToLifecycle(lifecycleOwner, viewModel.cameraSelector, preview)
-        preview.surfaceProvider = previewView.surfaceProvider
     }
     AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
 }
