@@ -12,7 +12,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import androidx.lifecycle.viewmodel.compose.viewModel
 import android.Manifest
 import android.hardware.SensorManager
 
@@ -23,7 +22,6 @@ class MainActivity : ComponentActivity() {
     private var viewModel: MainViewModel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
 
         super.onCreate(savedInstanceState)
         setContent {
