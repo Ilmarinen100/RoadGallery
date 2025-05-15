@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.sqrt
 
-
 class CameraViewModel(sensorManager: SensorManager, val context: Context) : ViewModel() {
     private val _imageFlow = MutableStateFlow<ByteArray?>(null)
     val imageFlow: StateFlow<ByteArray?> = _imageFlow
@@ -21,21 +20,19 @@ class CameraViewModel(sensorManager: SensorManager, val context: Context) : View
         _imageFlow.value = imageData
     }
 
-    val lastValues = mutableListOf(0.0, 0.0, 0.0, 0.0)
+    val lastValues = mutableListOf(0f, 0f, 0f, 0f)
     val sensorListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent?) {
             event?.let {
-                // Log.i("sensor", "${it.values.joinToString()}")
                 val x = it.values[0]
                 val y = it.values[1]
-                val z = it.values[2] - 9.81
+                val z = it.values[2] //- 9.81 - necessary on most phones but not all cars
 
                 val result = sqrt(x * x + y * y + z * z)
 
-
                 lastValues.add(0, result)
                 lastValues.removeAt(lastValues.size - 1)
-                if (lastValues.sum() > 15.0 * lastValues.size) {
+                if (lastValues.sum() > 1.0 * lastValues.size) {
                     Log.i("sensor", "Exceeded $result, ${it.values.joinToString()}")
                     deboucedAccel.value = true
                 } else {

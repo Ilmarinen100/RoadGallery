@@ -1,9 +1,7 @@
 package de.quartett.mobile.roadgallery
 
-import android.Manifest
 import android.car.Car
 import android.content.pm.PackageManager
-import android.hardware.SensorManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -14,6 +12,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import androidx.lifecycle.viewmodel.compose.viewModel
+import android.Manifest
+import android.hardware.SensorManager
 
 class MainActivity : ComponentActivity() {
     private val permissions =

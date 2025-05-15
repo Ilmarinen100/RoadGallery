@@ -30,6 +30,9 @@
             android:exported="true"
             android:theme="@style/Theme.AppCompat"
             tools:ignore="WrongManifestParent">
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
